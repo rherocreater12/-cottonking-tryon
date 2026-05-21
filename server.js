@@ -38,7 +38,10 @@ function proxyReq(opts, body, ms) {
       });
     });
     req.on('error', function(e) { resolve({ status: 0, body: Buffer.from(e.message), headers: {} }); });
-    const t = setTimeout(function() { req.destroy(); resolve({ status: 0, body: Buffer.from('timeout'), headers: {} }); }, ms || 30000);
+    const t = setTimeout(function() {
+      req.destroy();
+      resolve({ status: 0, body: Buffer.from('timeout'), headers: {} });
+    }, ms || 30000);
     req.on('response', function() { clearTimeout(t); });
     if (body && body.length) req.write(body);
     req.end();
@@ -47,7 +50,11 @@ function proxyReq(opts, body, ms) {
 
 function proxySSE(req, res, host, path) {
   cors(res);
-  res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' });
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive'
+  });
   const h = { 'Accept': 'text/event-stream' };
   if (HF_TOKEN) h['Authorization'] = 'Bearer ' + HF_TOKEN;
   const pr = https.request({ host: host, path: path, method: 'GET', headers: h }, function(r) {
@@ -64,12 +71,18 @@ function proxySSE(req, res, host, path) {
 
 async function handleProxy(req, res, pu) {
   const parts = pu.pathname.split('/').filter(Boolean);
-  if (parts[0] !== 'proxy' || parts.length < 2) return jsonRes(res, 400, { error: 'bad path' });
+  if (parts[0] !== 'proxy' || parts.length < 2) {
+    return jsonRes(res, 400, { error: 'bad path' });
+  }
   const idx = parseInt(parts[1], 10);
-  if (isNaN(idx) || idx < 0 || idx >= SPACES.length) return jsonRes(res, 400, { error: 'bad index 0-5' });
+  if (isNaN(idx) || idx < 0 || idx >= SPACES.length) {
+    return jsonRes(res, 400, { error: 'bad index 0-' + (SPACES.length - 1) });
+  }
   const sp = SPACES[idx];
   const sub = '/' + parts.slice(2).join('/') + (pu.search || '');
-  if (sub.startsWith('/queue/data')) return proxySSE(req, res, sp.host, sub);
+  if (sub.startsWith('/queue/data')) {
+    return proxySSE(req, res, sp.host, sub);
+  }
   const chunks = [];
   for await (const c of req) chunks.push(c);
   const raw = Buffer.concat(chunks);
@@ -79,7 +92,9 @@ async function handleProxy(req, res, pu) {
     raw, 120000
   );
   cors(res);
-  res.writeHead(r.status || 502, { 'Content-Type': r.headers['content-type'] || 'application/octet-stream' });
+  res.writeHead(r.status || 502, {
+    'Content-Type': r.headers['content-type'] || 'application/octet-stream'
+  });
   res.end(r.body);
 }
 
@@ -93,20 +108,19 @@ const server = http.createServer(async function(req, res) {
   if (pu.pathname === '/health') {
     return jsonRes(res, 200, {
       status: 'ok',
-      token: HF_TOKEN ? 'SET OK' : 'MISSING - set HF_TOKEN',
-      spaces: SPACES.map(function(s, i) { return i + ':' + s.name; })
+      token: HF_TOKEN ? 'SET OK' : 'MISSING - set HF_TOKEN env var on Render',
+      spaces: SPACES.map(function(s, i) { return i + ':' + s.name; }),
+      proxy: 'working'
     });
   }
-  if (pu.pathname.startsWith('/proxy/')) return handleProxy(req, res, pu);
-  jsonRes(res, 404, { error: 'use /health or /proxy/INDEX/...' });
+  if (pu.pathname.startsWith('/proxy/')) {
+    return handleProxy(req, res, pu);
+  }
+  jsonRes(res, 404, { error: 'use /health or /proxy/INDEX/path' });
 });
 
 server.listen(PORT, function() {
-  console.log('');
-  console.log('================================');
-  console.log(' COTTON KING SERVER RUNNING!');
-  console.log(' http://localhost:' + PORT + '/health');
-  console.log(' Token: ' + (HF_TOKEN ? 'SET OK' : 'MISSING!'));
-  console.log('================================');
-  console.log('');
+  console.log('Cotton King Proxy running on port ' + PORT);
+  console.log('Health: http://localhost:' + PORT + '/health');
+  console.log('HF_TOKEN: ' + (HF_TOKEN ? 'SET OK' : 'MISSING'));
 });
