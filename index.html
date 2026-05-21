@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Cotton King — AI Cotton King — Virtual Try-On</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;background:#080808;color:#d0c8b8;font-family:'DM Mono',monospace}
+.hdr{text-align:center;padding:32px 20px 18px;border-bottom:1px solid #161616}
+.hdr-badge{font-size:9px;letter-spacing:4px;color:#3a2e10;margin-bottom:8px}
+.hdr-title{font-size:clamp(26px,8vw,52px);font-weight:400;letter-spacing:-1px;color:#d0c8b8}
+.hdr-title span{color:#c9973a;font-style:italic}
+.wrap{max-width:800px;margin:0 auto;padding:20px 14px 60px}
+
+/* token box */
+.tok-box{margin-bottom:14px;padding:14px;background:#0c0c0c;border:1px solid #1a1a1a;border-radius:10px}
+.tok-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.tok-title{font-size:9px;letter-spacing:3px;color:#484848}
+.tok-saved{font-size:9px;padding:3px 10px;border-radius:20px;border:1px solid #1e4a1e;color:#4a9a4a;display:none}
+.tok-saved.on{display:block}
+.tok-row{display:flex;gap:6px}
+.tok-inp{flex:1;padding:9px 12px;background:#090909;border:1.5px solid #1a1a1a;border-radius:8px;color:#666;font-family:'DM Mono',monospace;font-size:10px;outline:none}
+.tok-inp::placeholder{color:#1e1e1e}
+.tok-btn{padding:9px 12px;background:transparent;border:1px solid #252525;border-radius:8px;color:#3a3a3a;font-size:9px;letter-spacing:2px;cursor:pointer;font-family:'DM Mono',monospace}
+.tok-hint{margin-top:10px;font-size:9px;color:#1e1e1e;line-height:1.8}
+.tok-hint a{color:#2a5a2a}
+
+/* servers */
+.srv-row{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-bottom:14px;padding:9px 12px;background:#0a0a0a;border:1px solid #161616;border-radius:8px}
+.srv-lbl{font-size:8px;letter-spacing:3px;color:#222;margin-right:3px}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:16px;border:1px solid #181818;font-size:8px;color:#2a2a2a;letter-spacing:1px;transition:all .3s}
+.chip .dot{width:5px;height:5px;border-radius:50%;background:#222;flex-shrink:0;transition:background .3s}
+.chip.trying{border-color:#8a640f;color:#c9973a}.chip.trying .dot{background:#c9973a;animation:blink 1s infinite}
+.chip.wake{border-color:#1a3a6a;color:#4a7aaa}.chip.wake .dot{background:#4a7aaa;animation:blink 0.5s infinite}
+.chip.ok{border-color:#1e4a1e;color:#4a9a4a}.chip.ok .dot{background:#4a9a4a}
+.chip.fail{border-color:#3a1010;color:#5a2a2a;text-decoration:line-through}.chip.fail .dot{background:#5a2a2a}
+
+/* tips */
+.tips{margin-bottom:14px;padding:10px 12px;background:#0a0a0a;border:1px solid #161616;border-radius:10px;font-size:9px;color:#2e2e2e;line-height:2}
+.tips b{color:#444}
+
+/* upload */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.zone{display:block;position:relative;aspect-ratio:3/4;border-radius:14px;overflow:hidden;cursor:pointer;border:2px dashed #1e1e1e;background:#090909;min-height:175px;-webkit-tap-highlight-color:transparent;transition:border-color .2s,box-shadow .2s}
+.zone input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:10;font-size:0}
+.zone.filled{border:2px solid #c9973a;box-shadow:0 0 16px rgba(201,151,58,.08)}
+.zone-inner{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:14px;text-align:center;pointer-events:none}
+.zone-icon{font-size:40px;line-height:1;margin-bottom:8px}
+.zone-name{font-size:10px;letter-spacing:3px;color:#c9973a;margin-bottom:4px}
+.zone-hint{font-size:9px;color:#242424;line-height:1.6}
+.zone-pill{margin-top:8px;padding:4px 10px;border:1px solid #1c1c1c;border-radius:24px;font-size:8px;color:#2e2e2e}
+.zone-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;pointer-events:none}
+.zone-over{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.85));padding:20px 8px 8px;text-align:center;font-size:8px;color:#c9973a;letter-spacing:2px;display:none;pointer-events:none}
+
+/* category */
+.sec-lbl{font-size:8px;letter-spacing:4px;color:#2a2a2a;margin-bottom:8px}
+.cat-row{display:flex;gap:6px;margin-bottom:14px}
+.cat-btn{flex:1;padding:8px 3px;border:1.5px solid #1a1a1a;border-radius:24px;background:transparent;color:#2a2a2a;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.cat-btn.on{border-color:#c9973a;color:#e8c76a;background:rgba(201,151,58,.07)}
+
+/* generate */
+.gen{width:100%;padding:16px;border:none;border-radius:12px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:4px;cursor:pointer;transition:all .3s;background:#0e0e0e;color:#222;margin-bottom:10px;-webkit-tap-highlight-color:transparent}
+.gen.on{background:linear-gradient(135deg,#c9973a,#7a5a0f);color:#000;box-shadow:0 4px 20px rgba(201,151,58,.18)}
+.gen:disabled{cursor:not-allowed}
+
+/* progress */
+.prog{display:none;margin-bottom:10px}
+.prog.on{display:block}
+.prog-track{height:3px;background:#0e0e0e;border-radius:3px;overflow:hidden}
+.prog-bar{height:100%;background:linear-gradient(90deg,#7a5a0f,#e8c76a);width:0;transition:width .5s}
+.prog-txt{font-size:8px;color:#2a2a2a;letter-spacing:2px;margin-top:5px;text-align:center}
+
+/* status */
+.stat{display:none;align-items:center;justify-content:center;gap:8px;padding:10px;background:rgba(201,151,58,.03);border:1px solid #1a1600;border-radius:8px;margin-bottom:10px;font-size:10px;color:#7a5a18;letter-spacing:1px;text-align:center}
+.stat.on{display:flex}
+
+/* countdown */
+.countdown{display:none;text-align:center;padding:14px;background:#090c14;border:1px solid #101828;border-radius:8px;margin-bottom:10px}
+.countdown.on{display:block}
+.cd-num{font-size:36px;color:#4a7aaa;line-height:1;margin-bottom:4px}
+.cd-txt{font-size:9px;color:#1e3a5a;letter-spacing:2px}
+
+/* error */
+.err{display:none;background:rgba(140,15,15,.07);border:1px solid #3a1010;border-radius:10px;padding:14px;margin-bottom:10px;font-size:10px;color:#c06060;line-height:1.8}
+.err.on{display:block}
+.retry-btn{display:inline-block;margin-top:10px;padding:7px 16px;background:rgba(201,151,58,.07);border:1px solid #7a5a0f;border-radius:24px;color:#c9973a;font-size:8px;letter-spacing:2px;cursor:pointer;font-family:'DM Mono',monospace}
+
+/* result */
+.result{display:none;margin-top:20px}
+.result.on{display:block}
+.res-tag{font-size:8px;letter-spacing:4px;color:#3a2e0a;margin-bottom:10px;text-align:center}
+.res-frame{border-radius:14px;overflow:hidden;border:1.5px solid #c9973a;box-shadow:0 0 28px rgba(201,151,58,.1);margin-bottom:10px}
+.res-frame img{width:100%;display:block}
+.ba{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.ba-item{border-radius:8px;overflow:hidden;border:1px solid #161616;position:relative}
+.ba-item img{width:100%;display:block;max-height:110px;object-fit:cover}
+.ba-lbl{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.75);padding:3px 0;text-align:center;font-size:7px;color:#484848;letter-spacing:2px}
+.act{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn-dl{padding:12px;background:#c9973a;border:none;border-radius:10px;color:#000;font-family:'DM Mono',monospace;font-size:10px;font-weight:500;letter-spacing:3px;cursor:pointer}
+.btn-new{padding:12px;background:transparent;border:1.5px solid #1c1c1c;border-radius:10px;color:#3a3a3a;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;cursor:pointer}
+
+.spin{width:12px;height:12px;border-radius:50%;border:2px solid #c9973a;border-top-color:transparent;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+@media(max-width:420px){.cat-btn{font-size:7px;padding:7px 2px}.grid{gap:7px}}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-badge">100% FREE · NO CREDIT CARD · OPEN SOURCE AI</div>
+  <div class="hdr-title">Virtual <span>Try‑On</span></div>
+</div>
+
+<div class="wrap">
+
+  <!-- HF Token -->
+  <div class="tok-box">
+    <div class="tok-head">
+      <div class="tok-title">🔑 FREE HUGGING FACE TOKEN (STRONGLY RECOMMENDED)</div>
+      <div class="tok-saved" id="tok-saved">✓ SAVED</div>
+    </div>
+    <div class="tok-row">
+      <input class="tok-inp" id="tok" type="password" placeholder="Paste your hf_xxxx token here…" oninput="onTokInput()">
+      <button class="tok-btn" onclick="saveTok()">SAVE</button>
+    </div>
+    <div class="tok-hint">
+      HF Token is stored on the proxy server (safe, not in browser)<br>
+      Token wakes sleeping servers &amp; gives priority queue access ✅<br>
+      ✦ FREE token from <a href="https://huggingface.co/settings/tokens" target="_blank">huggingface.co/settings/tokens</a> is set on backend server — no user input needed
+    </div>
+  </div>
+
+  <!-- Servers -->
+  <div class="srv-row">
+    <span class="srv-lbl">AI SERVERS:</span>
+    <span class="chip" id="c0"><span class="dot"></span>IDM-VTON</span>
+    <span class="chip" id="c1"><span class="dot"></span>Kolors</span>
+    <span class="chip" id="c2"><span class="dot"></span>LEFFA</span>
+    <span class="chip" id="c3"><span class="dot"></span>OOTDiff</span>
+    <span class="chip" id="c4"><span class="dot"></span>VTON-v2</span>
+    <span class="chip" id="c5"><span class="dot"></span>CatVTON</span>
+  </div>
+
+  <!-- Tips -->
+  <div class="tips">
+    <b>📸 PHOTO:</b> Stand straight · good lighting · plain background<br>
+    <b>👕 GARMENT:</b> White/plain background or flat-lay · upper body for shirts<br>
+    <b>⚡ TIP:</b> Get a free HF token above — it wakes sleeping servers automatically
+  </div>
+
+  <!-- Uploads -->
+  <div class="grid">
+    <label class="zone" id="sz">
+      <input type="file" id="si" accept="image/*" onchange="onFile(this,'s')">
+      <div class="zone-inner" id="sb">
+        <div class="zone-icon">🧍</div>
+        <div class="zone-name">YOUR PHOTO</div>
+        <div class="zone-hint">Front-facing<br>full body preferred</div>
+        <div class="zone-pill">TAP TO UPLOAD</div>
+      </div>
+      <img class="zone-img" id="sp" alt="">
+      <div class="zone-over" id="so">TAP TO CHANGE</div>
+    </label>
+
+    <label class="zone" id="gz">
+      <input type="file" id="gi" accept="image/*" onchange="onFile(this,'g')">
+      <div class="zone-inner" id="gb">
+        <div class="zone-icon">👔</div>
+        <div class="zone-name">GARMENT</div>
+        <div class="zone-hint">White/plain background<br>or flat-lay</div>
+        <div class="zone-pill">TAP TO UPLOAD</div>
+      </div>
+      <img class="zone-img" id="gp" alt="">
+      <div class="zone-over" id="go">TAP TO CHANGE</div>
+    </label>
+  </div>
+
+  <!-- Category -->
+  <div class="sec-lbl">GARMENT CATEGORY</div>
+  <div class="cat-row">
+    <button class="cat-btn on" onclick="pickCat('upper body',this)">Upper Body</button>
+    <button class="cat-btn" onclick="pickCat('lower body',this)">Lower Body</button>
+    <button class="cat-btn" onclick="pickCat('full body',this)">Full Body</button>
+  </div>
+
+  <!-- Generate -->
+  <button class="gen" id="genBtn" onclick="doGenerate()" disabled>✦  GENERATE TRY-ON</button>
+
+  <!-- Progress -->
+  <div class="prog" id="prog">
+    <div class="prog-track"><div class="prog-bar" id="pb"></div></div>
+    <div class="prog-txt" id="pt">WORKING…</div>
+  </div>
+
+  <!-- Status -->
+  <div class="stat" id="stat">
+    <div class="spin"></div><span id="stattxt"></span>
+  </div>
+
+  <!-- Countdown (for sleeping servers) -->
+  <div class="countdown" id="cd">
+    <div class="cd-num" id="cdnum">45</div>
+    <div class="cd-txt" id="cdtxt">SERVER WAKING UP · PLEASE WAIT…</div>
+  </div>
+
+  <!-- Error -->
+  <div class="err" id="errbox">
+    <span id="errtxt"></span>
+    <br><button class="retry-btn" onclick="doGenerate()">↺ RETRY NOW</button>
+  </div>
+
+  <!-- Result -->
+  <div class="result" id="resbox">
+    <div class="res-tag">✓ YOUR LOOK IS READY</div>
+    <div class="res-frame"><img id="resimg" src="" alt="Result"></div>
+    <div class="ba">
+      <div class="ba-item"><img id="bas" src="" alt=""><div class="ba-lbl">YOUR PHOTO</div></div>
+      <div class="ba-item"><img id="bag" src="" alt=""><div class="ba-lbl">GARMENT</div></div>
+    </div>
+    <div class="act">
+      <button class="btn-dl" onclick="doDownload()">↓ SAVE PHOTO</button>
+      <button class="btn-new" onclick="doReset()">↺ TRY NEW</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Spaces ────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// PROXY CONFIG — change PROXY_URL to your deployed backend URL
+// Local testing: http://localhost:3001
+// Production (Render): https://your-app.onrender.com
+// ─────────────────────────────────────────────────────────────────────────────
+// =====================================================================
+// STEP 1: Replace the URL below with YOUR Render backend URL
+// Example: https://cottonking-tryon-abc123.onrender.com
+// =====================================================================
+var RENDER_BACKEND_URL = 'https://cottonking-tryon.onrender.com';
+// =====================================================================
+
+var PROXY_URL = (function() {
+  var h = window.location.hostname;
+  if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:3001';
+  return RENDER_BACKEND_URL;
+})();
+
+var SPACES = [
+  {
+    name: 'IDM-VTON',
+    url: 'https://yisol-idm-vton.hf.space', fn: 0,
+    mkData: function(p, g, cat) {
+      return [{background:p, layers:[], composite:null}, g, cat, true, false, 30, 42];
+    }
+  },
+  {
+    name: 'Kolors',
+    url: 'https://kwai-kolors-kolors-virtual-try-on.hf.space', fn: 0,
+    mkData: function(p, g, cat) {
+      var c = cat==='upper body'?'Upper body':cat==='lower body'?'Lower body':'Dress';
+      return [p, g, c];
+    }
+  },
+  {
+    name: 'LEFFA',
+    url: 'https://franciszzj-leffa.hf.space', fn: 0,
+    mkData: function(p, g, cat) {
+      return [p, g, cat, 1, 50, 2.5, 42];
+    }
+  },
+  {
+    name: 'OOTDiff',
+    url: 'https://levihsu-ootdiffusion.hf.space', fn: 0,
+    mkData: function(p, g, cat) {
+      var c = cat==='upper body'?'Upper-body':cat==='lower body'?'Lower-body':'Dress';
+      return [{background:p, layers:[], composite:null}, g, c, 1, 20, 2, 0];
+    }
+  },
+  {
+    name: 'VTON-v2',
+    url: 'https://kadirnar-idm-vton-v2.hf.space', fn: 0,
+    mkData: function(p, g, cat) {
+      return [{background:p, layers:[], composite:null}, g, cat, true, false, 30, 42];
+    }
+  },
+  {
+    name: 'CatVTON',
+    url: 'https://zhengchong-catvton.hf.space', fn: 0,
+    mkData: function(p, g, cat) {
+      return [p, g, cat, 50, 2.5, 42, true];
+    }
+  }
+];
+
+// ── App state ─────────────────────────────────────────────────────────────────
+var ST = {
+  sFile:null, sUrl:null, gFile:null, gUrl:null,
+  cat:'upper body', busy:false, resUrl:null,
+  tok: localStorage.getItem('hft') || '',
+  cdTimer: null
+};
+
+window.addEventListener('load', function() {
+  if (ST.tok) {
+    document.getElementById('tok').value = ST.tok;
+    document.getElementById('tok-saved').className = 'tok-saved on';
+  }
+  refreshBtn();
+});
+
+// ── Token ─────────────────────────────────────────────────────────────────────
+function onTokInput() {
+  document.getElementById('tok-saved').className = 'tok-saved';
+}
+function saveTok() {
+  var v = (document.getElementById('tok').value || '').trim();
+  ST.tok = v;
+  if (v) { localStorage.setItem('hft', v); document.getElementById('tok-saved').className = 'tok-saved on'; }
+  else   { localStorage.removeItem('hft'); }
+}
+
+// ── File handling ─────────────────────────────────────────────────────────────
+function onFile(inp, t) {
+  var f = inp.files[0]; if (!f) return;
+  var u = URL.createObjectURL(f);
+  if (t==='s') { ST.sFile=f; ST.sUrl=u; showPrev('s',u); }
+  else         { ST.gFile=f; ST.gUrl=u; showPrev('g',u); }
+  hideErr(); refreshBtn();
+}
+function showPrev(t, u) {
+  document.getElementById(t+'z').classList.add('filled');
+  var img=document.getElementById(t+'p'); img.src=u; img.style.display='block';
+  document.getElementById(t+'o').style.display='block';
+  document.getElementById(t+'b').style.display='none';
+}
+function pickCat(cat, btn) {
+  ST.cat = cat;
+  document.querySelectorAll('.cat-btn').forEach(function(b){ b.classList.remove('on'); });
+  btn.classList.add('on');
+}
+function refreshBtn() {
+  var ok = ST.sFile && ST.gFile && !ST.busy;
+  var b = document.getElementById('genBtn');
+  b.disabled = !ok; b.className = ok ? 'gen on' : 'gen';
+  b.textContent = ST.busy ? '⏳  GENERATING…' : '✦  GENERATE TRY-ON';
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
+function chip(i, cls) { document.getElementById('c'+i).className = 'chip'+(cls?' '+cls:''); }
+function resetChips()  { for(var i=0;i<SPACES.length;i++) chip(i,''); }
+function setStat(msg) {
+  var el=document.getElementById('stat'); document.getElementById('stattxt').textContent=msg;
+  el.className = msg ? 'stat on' : 'stat';
+}
+function setProg(pct, txt) {
+  var w=document.getElementById('prog');
+  if (pct===null) { w.className='prog'; return; }
+  w.className='prog on';
+  document.getElementById('pb').style.width=pct+'%';
+  document.getElementById('pt').textContent=txt;
+}
+function showErr(msg) {
+  document.getElementById('errtxt').textContent=msg;
+  document.getElementById('errbox').className='err on';
+}
+function hideErr() { document.getElementById('errbox').className='err'; }
+function hideCd() {
+  document.getElementById('cd').className='countdown';
+  if (ST.cdTimer) { clearInterval(ST.cdTimer); ST.cdTimer=null; }
+}
+function showCd(secs, label) {
+  hideCd();
+  document.getElementById('cdnum').textContent=secs;
+  document.getElementById('cdtxt').textContent=label;
+  document.getElementById('cd').className='countdown on';
+  var remaining=secs;
+  ST.cdTimer=setInterval(function(){
+    remaining--;
+    document.getElementById('cdnum').textContent=remaining;
+    if(remaining<=0){ hideCd(); }
+  },1000);
+  return new Promise(function(r){ setTimeout(r, secs*1000); });
+}
+
+// ── Image resize ──────────────────────────────────────────────────────────────
+function resizeFile(file, maxPx) {
+  return new Promise(function(resolve) {
+    var img=new Image(), url=URL.createObjectURL(file);
+    img.onload=function(){
+      var s=Math.min(1,maxPx/Math.max(img.width,img.height));
+      var c=document.createElement('canvas');
+      c.width=Math.round(img.width*s); c.height=Math.round(img.height*s);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      URL.revokeObjectURL(url);
+      c.toBlob(function(b){ resolve(b); },'image/jpeg',0.85);
+    };
+    img.src=url;
+  });
+}
+
+// ── Upload to space (with sleep detection) ────────────────────────────────────
+function spaceIndexOf(spaceUrl) {
+  for (var i = 0; i < SPACES.length; i++) {
+    if (SPACES[i].url === spaceUrl) return i;
+  }
+  return 0;
+}
+function proxyUrl(spaceUrl, path) {
+  return PROXY_URL + '/proxy/' + spaceIndexOf(spaceUrl) + path;
+}
+
+function uploadToSpace(spaceUrl, blob, fname) {
+  return new Promise(function(resolve, reject) {
+    var form=new FormData(); form.append('files',blob,fname);
+    var headers={};
+    // Token stored in proxy — no need to send from browser
+    fetch(proxyUrl(spaceUrl, '/upload'),{method:'POST',headers:headers,body:form})
+      .then(function(r){
+        if(r.ok) return r.json().then(function(p){ resolve({ok:true,path:p[0]}); });
+        return r.text().then(function(body){
+          var lower=body.toLowerCase();
+          // Detect sleeping vs crashed
+          var sleeping = lower.indexOf('waking')>-1 || lower.indexOf('loading')>-1 || (r.status===503 && lower.indexOf('error')===-1 && lower.indexOf('hf.co')===-1);
+          resolve({ok:false, status:r.status, sleeping:sleeping, body:body.slice(0,200)});
+        });
+      })
+      .catch(function(e){ resolve({ok:false,status:0,sleeping:false,body:e.message}); });
+  });
+}
+
+function mkFileObj(spaceUrl, path, name) {
+  return {path:path, url:spaceUrl+'/file='+path, orig_name:name, size:null, is_stream:false, meta:{_type:'gradio.FileData'}};
+}
+
+// ── Queue + SSE ───────────────────────────────────────────────────────────────
+function queueAndWait(space, data) {
+  return new Promise(function(resolve, reject) {
+    var session=Math.random().toString(36).slice(2,12);
+    var headers={'Content-Type':'application/json'};
+    if(ST.tok) headers['Authorization']='Bearer '+ST.tok;
+
+    fetch(proxyUrl(space.url, '/queue/join'),{
+      method:'POST', headers:headers,
+      body:JSON.stringify({fn_index:space.fn,session_hash:session,event_data:null,data:data})
+    }).then(function(r){
+      if(!r.ok) throw new Error('Queue HTTP '+r.status);
+      var es=new EventSource(proxyUrl(space.url, '/queue/data?session_hash='+session));
+      var timer=setTimeout(function(){ es.close(); reject(new Error('Timeout')); },180000);
+      es.onmessage=function(e){
+        var msg; try{ msg=JSON.parse(e.data); } catch(ex){ return; }
+        if(msg.msg==='queue_full'){ es.close(); clearTimeout(timer); reject(new Error('Queue full')); }
+        else if(msg.msg==='estimation'){
+          setStat(space.name+' · queue #'+(msg.rank||'?')+' · ~'+Math.round(msg.rank_eta||45)+'s');
+          setProg(44,'WAITING IN QUEUE…');
+        } else if(msg.msg==='process_starts'){
+          setStat(space.name+' · AI fitting garment…'); setProg(65,'AI PROCESSING…');
+        } else if(msg.msg==='process_generating'){
+          setStat(space.name+' · rendering…'); setProg(85,'RENDERING…');
+        } else if(msg.msg==='process_completed'){
+          es.close(); clearTimeout(timer);
+          if(msg.output&&msg.output.error){ reject(new Error(msg.output.error)); return; }
+          resolve(msg.output?msg.output.data:null);
+        }
+      };
+      es.onerror=function(){ es.close(); clearTimeout(timer); reject(new Error('SSE lost')); };
+    }).catch(reject);
+  });
+}
+
+// ── Extract output URL ────────────────────────────────────────────────────────
+function getUrl(data, spaceUrl) {
+  if(!data) return null;
+  var raw=data[0]; if(!raw) return null;
+  if(typeof raw==='string') return (raw.startsWith('http')||raw.startsWith('data:'))?raw:spaceUrl+'/file='+raw;
+  if(raw.url) return raw.url;
+  if(raw.path) return raw.path.startsWith('http')?raw.path:spaceUrl+'/file='+raw.path;
+  return null;
+}
+
+// ── Try one space ─────────────────────────────────────────────────────────────
+function trySpace(space, sBlob, gBlob) {
+  return new Promise(function(resolve, reject) {
+    setStat(space.name+' · uploading…'); setProg(20,'UPLOADING…');
+
+    // Upload both images
+    Promise.all([
+      uploadToSpace(space.url, sBlob, 'person.jpg'),
+      uploadToSpace(space.url, gBlob, 'garment.jpg')
+    ]).then(function(results) {
+      var pr=results[0], gr=results[1];
+
+      // Check for sleeping
+      if(!pr.ok || !gr.ok) {
+        var res = !pr.ok ? pr : gr;
+        if(res.sleeping) {
+          // Server is sleeping — show countdown and retry once
+          setChip(SPACES.indexOf(space),'wake');
+          setStat(space.name+' · server sleeping · waking up…');
+          hideCd();
+          showCd(50, space.name.toUpperCase()+' WAKING UP · PLEASE WAIT…')
+            .then(function(){
+              setStat(space.name+' · retrying after wakeup…');
+              return Promise.all([
+                uploadToSpace(space.url, sBlob, 'person.jpg'),
+                uploadToSpace(space.url, gBlob, 'garment.jpg')
+              ]);
+            })
+            .then(function(results2) {
+              var pr2=results2[0], gr2=results2[1];
+              if(!pr2.ok||!gr2.ok) {
+                var e2=!pr2.ok?pr2:gr2;
+                reject(new Error(e2.sleeping?'Still waking, skipping':'HTTP '+e2.status));
+                return;
+              }
+              continueWithPaths(space, pr2.path, gr2.path, resolve, reject);
+            })
+            .catch(reject);
+        } else {
+          reject(new Error('Space crashed/error (HTTP '+res.status+')'));
+        }
+        return;
+      }
+
+      continueWithPaths(space, pr.path, gr.path, resolve, reject);
+    }).catch(reject);
+  });
+}
+
+function continueWithPaths(space, pPath, gPath, resolve, reject) {
+  var pFile=mkFileObj(space.url, pPath, 'person.jpg');
+  var gFile=mkFileObj(space.url, gPath, 'garment.jpg');
+  var data=space.mkData(pFile, gFile, ST.cat);
+  setStat(space.name+' · joining AI queue…'); setProg(35,'JOINING QUEUE…');
+  queueAndWait(space, data).then(resolve).catch(reject);
+}
+
+// ── Main generate logic ───────────────────────────────────────────────────────
+function doGenerate() {
+  if(!ST.sFile||!ST.gFile){ showErr('Please upload your photo and a garment first.'); return; }
+  if(ST.busy) return;
+
+  ST.busy=true; hideErr(); hideCd(); setStat(''); setProg(5,'PREPARING…');
+  document.getElementById('resbox').className='result';
+  resetChips(); refreshBtn();
+
+  resizeFile(ST.sFile,1024).then(function(sBlob){
+    return resizeFile(ST.gFile,1024).then(function(gBlob){
+      return runSpaces(0, sBlob, gBlob, '');
+    });
+  }).catch(function(err){
+    finalError(err.message);
+  });
+}
+
+function runSpaces(i, sBlob, gBlob, lastErr) {
+  if(i >= SPACES.length) {
+    finalError('All '+SPACES.length+' AI servers failed.\n\n→ Please get a FREE HF token from huggingface.co/settings/tokens and paste it above — this wakes sleeping servers and gives priority access.');
+    return;
+  }
+
+  chip(i,'trying');
+  trySpace(SPACES[i], sBlob, gBlob)
+    .then(function(data){
+      chip(i,'ok'); hideCd();
+      var url=getUrl(data, SPACES[i].url);
+      if(!url) { chip(i,'fail'); runSpaces(i+1,sBlob,gBlob,'No output URL'); return; }
+
+      // Success!
+      ST.resUrl=url; ST.busy=false;
+      setStat(''); setProg(100,'DONE!');
+      setTimeout(function(){ setProg(null,''); },800);
+      document.getElementById('resimg').src=url;
+      document.getElementById('bas').src=ST.sUrl;
+      document.getElementById('bag').src=ST.gUrl;
+      document.getElementById('resbox').className='result on';
+      refreshBtn();
+      setTimeout(function(){
+        document.getElementById('resbox').scrollIntoView({behavior:'smooth',block:'start'});
+      },300);
+    })
+    .catch(function(err){
+      chip(i,'fail');
+      if(i+1 < SPACES.length) {
+        setStat('Switching to '+SPACES[i+1].name+'…');
+        setTimeout(function(){ runSpaces(i+1,sBlob,gBlob,err.message); },1500);
+      } else {
+        runSpaces(i+1,sBlob,gBlob,err.message);
+      }
+    });
+}
+
+function finalError(msg) {
+  ST.busy=false; setStat(''); hideCd(); showErr(msg);
+  setProg(null,''); refreshBtn();
+}
+
+// ── Download ──────────────────────────────────────────────────────────────────
+function doDownload() {
+  if(!ST.resUrl) return;
+  fetch(ST.resUrl)
+    .then(function(r){ return r.blob(); })
+    .then(function(blob){
+      var u=URL.createObjectURL(blob),a=document.createElement('a');
+      a.href=u; a.download='tryon-'+Date.now()+'.jpg';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(u);
+    })
+    .catch(function(){ window.open(ST.resUrl,'_blank'); });
+}
+
+// ── Reset ─────────────────────────────────────────────────────────────────────
+function doReset() {
+  ST.sFile=null; ST.sUrl=null; ST.gFile=null; ST.gUrl=null; ST.resUrl=null; ST.busy=false;
+  ['s','g'].forEach(function(t){
+    document.getElementById(t+'z').classList.remove('filled');
+    document.getElementById(t+'p').style.display='none';
+    document.getElementById(t+'o').style.display='none';
+    document.getElementById(t+'b').style.display='';
+    document.getElementById(t+'i').value='';
+  });
+  document.getElementById('resbox').className='result';
+  hideErr(); hideCd(); setStat(''); setProg(null,''); resetChips(); refreshBtn();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>

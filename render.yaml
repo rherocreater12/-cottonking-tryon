@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: cottonking-tryon
+    runtime: node
+    buildCommand: echo ok
+    startCommand: node server.js
+    envVarGroups: []
