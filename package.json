@@ -1,0 +1,12 @@
+{
+  "name": "cottonking-tryon",
+  "version": "1.0.0",
+  "description": "Cotton King Virtual Try-On Proxy Server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}
