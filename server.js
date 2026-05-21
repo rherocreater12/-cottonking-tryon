@@ -5,13 +5,14 @@ const url = require('url');
 const PORT = process.env.PORT || 3001;
 const HF_TOKEN = process.env.HF_TOKEN || '';
 
+// Using YOUR personal HuggingFace space - always awake, no queue
 const SPACES = [
-  { name: 'IDM-VTON', host: 'yisol-idm-vton.hf.space' },
-  { name: 'LEFFA',    host: 'franciszzj-leffa.hf.space' },
-  { name: 'CatVTON',  host: 'zhengchong-catvton.hf.space' },
-  { name: 'VTON-v2',  host: 'kadirnar-idm-vton-v2.hf.space' },
-  { name: 'OOTDiff',  host: 'levihsu-ootdiffusion.hf.space' },
-  { name: 'Kolors',   host: 'kwai-kolors-kolors-virtual-try-on.hf.space' }
+  { name: 'CottonKing-VTON', host: 'mandy1837-cottonking-vton.hf.space' },
+  { name: 'IDM-VTON',        host: 'yisol-idm-vton.hf.space' },
+  { name: 'LEFFA',           host: 'franciszzj-leffa.hf.space' },
+  { name: 'CatVTON',         host: 'zhengchong-catvton.hf.space' },
+  { name: 'VTON-v2',         host: 'kadirnar-idm-vton-v2.hf.space' },
+  { name: 'OOTDiff',         host: 'levihsu-ootdiffusion.hf.space' }
 ];
 
 function cors(res) {
@@ -88,7 +89,8 @@ async function handleProxy(req, res, pu) {
   const raw = Buffer.concat(chunks);
   const ct = req.headers['content-type'] || '';
   const r = await proxyReq(
-    { host: sp.host, path: sub, method: req.method, headers: { 'Content-Type': ct, 'Content-Length': raw.length } },
+    { host: sp.host, path: sub, method: req.method,
+      headers: { 'Content-Type': ct, 'Content-Length': raw.length } },
     raw, 120000
   );
   cors(res);
@@ -108,7 +110,8 @@ const server = http.createServer(async function(req, res) {
   if (pu.pathname === '/health') {
     return jsonRes(res, 200, {
       status: 'ok',
-      token: HF_TOKEN ? 'SET OK' : 'MISSING - set HF_TOKEN env var on Render',
+      token: HF_TOKEN ? 'SET OK' : 'MISSING',
+      primary_space: SPACES[0].host,
       spaces: SPACES.map(function(s, i) { return i + ':' + s.name; }),
       proxy: 'working'
     });
@@ -120,7 +123,7 @@ const server = http.createServer(async function(req, res) {
 });
 
 server.listen(PORT, function() {
-  console.log('Cotton King Proxy running on port ' + PORT);
-  console.log('Health: http://localhost:' + PORT + '/health');
+  console.log('Cotton King Proxy - Port ' + PORT);
+  console.log('Primary Space: ' + SPACES[0].host);
   console.log('HF_TOKEN: ' + (HF_TOKEN ? 'SET OK' : 'MISSING'));
 });
